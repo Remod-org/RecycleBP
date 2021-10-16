@@ -21,3 +21,6 @@ This plugin uses the Oxide/umod permissions system.  The sole permission is recy
   }
 }
 ```
+
+## TO FIX
+Seems that it happily creates blueprints for items that don't need them.  Oh well...
