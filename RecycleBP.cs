@@ -27,7 +27,7 @@ using Oxide.Core;
 
 namespace Oxide.Plugins
 {
-    [Info("Recycle Blueprint", "RFC1920", "1.0.1")]
+    [Info("Recycle Blueprint", "RFC1920", "1.0.2")]
     [Description("Get blueprints from recycled items not already learned")]
     class RecycleBP : RustPlugin
     {
@@ -111,7 +111,7 @@ namespace Oxide.Plugins
 #if DEBUG
                 Puts($"{i.ToString()} Found {item.info.name}");
 #endif
-                if (item.info.Blueprint.enabled)
+                if (item.info.Blueprint.isResearchable)
                 {
                     if (!(player.Object as BasePlayer).blueprints.HasUnlocked(item.info))
                     {
