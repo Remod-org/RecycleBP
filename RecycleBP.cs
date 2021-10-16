@@ -20,7 +20,7 @@
     Optionally you can also view the license at <http://www.gnu.org/licenses/>.
 */
 #endregion License Information (GPL v3)
-#define DEBUG
+//#define DEBUG
 using System.Collections.Generic;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core;
