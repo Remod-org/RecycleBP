@@ -20,19 +20,17 @@
     Optionally you can also view the license at <http://www.gnu.org/licenses/>.
 */
 #endregion License Information (GPL v3)
-//#define DEBUG
 using System.Collections.Generic;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core;
 
 namespace Oxide.Plugins
 {
-    [Info("Recycle Blueprint", "RFC1920", "1.0.2")]
+    [Info("Recycle Blueprint", "RFC1920", "1.0.3")]
     [Description("Get blueprints from recycled items not already learned")]
-    class RecycleBP : RustPlugin
+    internal class RecycleBP : RustPlugin
     {
         #region vars
-        [PluginReference]
         private ConfigData configData;
 
         private const string permRecyleBP = "recyclebp.use";
@@ -45,12 +43,12 @@ namespace Oxide.Plugins
         #endregion
 
         #region init
-        void Init()
+        private void Init()
         {
             permission.RegisterPermission(permRecyleBP, this);
         }
 
-        void Loaded()
+        private void Loaded()
         {
             LoadConfigVariables();
         }
@@ -60,12 +58,14 @@ namespace Oxide.Plugins
         private class ConfigData
         {
             public bool usePermission;
+            public bool debug;
             public VersionNumber Version;
         }
+
         protected override void LoadDefaultConfig()
         {
             Puts("Creating new config file.");
-            var config = new ConfigData
+            ConfigData config = new ConfigData
             {
                 usePermission = false,
                 Version = Version,
@@ -88,7 +88,7 @@ namespace Oxide.Plugins
         #endregion
 
         #region Main
-        object OnRecyclerToggle(Recycler recycler, BasePlayer player)
+        private object OnRecyclerToggle(Recycler recycler, BasePlayer player)
         {
             if (recycler.IsOn()) return null;
 
@@ -97,42 +97,33 @@ namespace Oxide.Plugins
             return null;
         }
 
-        bool ItemBPCheck(Recycler recycler, IPlayer player)
+        private bool ItemBPCheck(Recycler recycler, IPlayer player)
         {
-            if (player != null)
+            if (player != null && configData.usePermission && !player.HasPermission(permRecyleBP))
             {
-                if (configData.usePermission && !player.HasPermission(permRecyleBP)) return true;
+                return true;
             }
 
             for (int i = 0; i < 6; i++)
             {
                 Item item = recycler.inventory.GetSlot(i);
                 if (item == null) continue;
-#if DEBUG
-                Puts($"{i.ToString()} Found {item.info.name}");
-#endif
+                if (configData.debug && configData.debug) Puts($"{i.ToString()} Found {item.info.name}");
                 if (item.info.Blueprint.isResearchable)
                 {
-                    if (!(player.Object as BasePlayer).blueprints.HasUnlocked(item.info))
+                    BasePlayer bluepl = player.Object as BasePlayer;
+                    if (!bluepl.blueprints.HasUnlocked(item.info))
                     {
-#if DEBUG
-                        Puts($"Player has not unlocked BP for {item.info.name}");
-#endif
+                        if (configData.debug) Puts($"Player has not unlocked BP for {item.info.name}");
                         int targetslot = FindEmptyOutputSlot(recycler);
                         if (targetslot > 0)
                         {
-#if DEBUG
-                            Puts($"Creating BP for {item.info.name}");
-#endif
-                            var newbp = ItemManager.CreateByName("blueprintbase");
+                            if (configData.debug) Puts($"Creating BP for {item.info.name}");
+                            Item newbp = ItemManager.CreateByName("blueprintbase");
                             newbp.blueprintTarget = item.info.itemid;
                             newbp.MoveToContainer(recycler.inventory, targetslot);
                             return true;
                         }
-                    }
-                    else
-                    {
-                        continue;
                     }
                 }
             }
@@ -155,12 +146,10 @@ namespace Oxide.Plugins
 
         private object CanLootEntity(BasePlayer player, StorageContainer container)
         {
-            Recycler rc = container.GetComponentInParent<Recycler>() ?? null;
+            Recycler rc = container.GetComponentInParent<Recycler>();
             if (rc == null) return null;
 
-#if DEBUG
-            Puts($"Adding recycler {rc.net.ID.ToString()}");
-#endif
+            if (configData.debug) Puts($"Adding recycler {rc.net.ID.ToString()}");
             if (rcloot.ContainsKey(rc.net.ID))
             {
                 rcloot.Remove(rc.net.ID);
@@ -170,16 +159,15 @@ namespace Oxide.Plugins
             return null;
         }
 
-        void OnLootEntityEnd(BasePlayer player, BaseCombatEntity entity)
+        private void OnLootEntityEnd(BasePlayer player, BaseCombatEntity entity)
         {
             if (!rcloot.ContainsKey(entity.net.ID)) return;
             if (entity == null) return;
+            if (!(entity is Recycler)) return;
 
-            if (rcloot[entity.net.ID] == player.userID)
+            if (rcloot[entity.net.ID] == player.userID && configData.debug)
             {
-#if DEBUG
                 Puts($"Removing recycler {entity.net.ID.ToString()}");
-#endif
             }
         }
         #endregion
