@@ -1,7 +1,7 @@
-#region License (GPL v3)
+#region License (GPL v2)
 /*
-    DESCRIPTION
-    Copyright (c) 2021 RFC1920 <desolationoutpostpve@gmail.com>
+    Recyle items into blueprints
+    Copyright (c) 2021-2023 RFC1920 <desolationoutpostpve@gmail.com>
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@ using Oxide.Core;
 
 namespace Oxide.Plugins
 {
-    [Info("Recycle Blueprint", "RFC1920", "1.0.3")]
+    [Info("Recycle Blueprint", "RFC1920", "1.0.4")]
     [Description("Get blueprints from recycled items not already learned")]
     internal class RecycleBP : RustPlugin
     {
@@ -43,7 +43,7 @@ namespace Oxide.Plugins
         #endregion
 
         #region init
-        private void Init()
+        private void OnServerInitialized()
         {
             permission.RegisterPermission(permRecyleBP, this);
         }
@@ -104,11 +104,12 @@ namespace Oxide.Plugins
                 return true;
             }
 
-            for (int i = 0; i < 6; i++)
+            //for (int i = 0; i < 6; i++)
+            for (int i = 0; i < recycler.inventory.availableSlots.Count; i++)
             {
                 Item item = recycler.inventory.GetSlot(i);
                 if (item == null) continue;
-                if (configData.debug && configData.debug) Puts($"{i.ToString()} Found {item.info.name}");
+                if (configData.debug && configData.debug) Puts($"{i} Found {item.info.name}");
                 if (item.info.Blueprint.isResearchable)
                 {
                     BasePlayer bluepl = player.Object as BasePlayer;
@@ -149,25 +150,26 @@ namespace Oxide.Plugins
             Recycler rc = container.GetComponentInParent<Recycler>();
             if (rc == null) return null;
 
-            if (configData.debug) Puts($"Adding recycler {rc.net.ID.ToString()}");
-            if (rcloot.ContainsKey(rc.net.ID))
+            if (configData.debug) Puts($"Adding recycler {rc.net.ID}");
+            if (rcloot.ContainsKey((uint)rc.net.ID.Value))
             {
-                rcloot.Remove(rc.net.ID);
+                rcloot.Remove((uint)rc.net.ID.Value);
             }
-            rcloot.Add(rc.net.ID, player.userID);
+            rcloot.Add((uint)rc.net.ID.Value, player.userID);
 
             return null;
         }
 
         private void OnLootEntityEnd(BasePlayer player, BaseCombatEntity entity)
         {
-            if (!rcloot.ContainsKey(entity.net.ID)) return;
             if (entity == null) return;
+            if (player == null) return;
             if (!(entity is Recycler)) return;
+            if (!rcloot.ContainsKey((uint)entity.net.ID.Value)) return;
 
-            if (rcloot[entity.net.ID] == player.userID && configData.debug)
+            if (rcloot[(uint)entity.net.ID.Value] == player.userID && configData.debug)
             {
-                Puts($"Removing recycler {entity.net.ID.ToString()}");
+                Puts($"Removing recycler {entity.net.ID}");
             }
         }
         #endregion
